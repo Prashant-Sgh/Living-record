@@ -8,7 +8,7 @@ Built as a hackathon project to demonstrate how persistent memory can improve lo
 
 ---
 
-# Why Living Record?
+## Why Living Record?
 
 Traditional document-based AI systems answer questions by searching uploaded documents every time.
 
@@ -27,7 +27,7 @@ Every uploaded report becomes part of an evolving clinical memory that understan
 
 ---
 
-# The Problem
+## The Problem
 
 Healthcare information is fragmented.
 
@@ -50,7 +50,7 @@ They **do not build memory**.
 
 ---
 
-# Our Solution
+## Our Solution
 
 Living Record converts medical reports into an evolving knowledge graph that acts as a persistent clinical memory.
 
@@ -73,7 +73,7 @@ flowchart TD
 
 ---
 
-# Core Memory Formation
+## Core Memory Formation
 
 Every uploaded report becomes another memory.
 
@@ -103,7 +103,7 @@ Instead of creating isolated embeddings, every report enriches the existing pati
 
 ---
 
-# Behind the Scenes
+## Behind the Scenes
 
 ```mermaid
 flowchart TD
@@ -133,7 +133,7 @@ flowchart TD
 
 ---
 
-# Memory Evolution
+## Memory Evolution
 
 As new reports arrive, memory evolves instead of restarting.
 
@@ -172,7 +172,7 @@ The graph continuously becomes richer as more clinical information is remembered
 
 ---
 
-# Example Questions
+## Example Questions
 
 * How has John's diabetes progressed?
 * When was insulin introduced?
@@ -183,7 +183,7 @@ The graph continuously becomes richer as more clinical information is remembered
 
 ---
 
-# System Architecture
+## System Architecture
 
 ```mermaid
 flowchart TB
@@ -228,7 +228,7 @@ flowchart TB
 
 ---
 
-# 📂 Repository Structure
+## 📂 Repository Structure
 
 ```text
 living-record/
@@ -255,7 +255,7 @@ living-record/
 
 ---
 
-# Features
+## Features
 
 * 📄 Medical report ingestion
 * 🧠 Persistent clinical memory
@@ -268,7 +268,7 @@ living-record/
 
 ---
 
-# Vision
+## Vision
 
 Healthcare is not a collection of documents.
 
