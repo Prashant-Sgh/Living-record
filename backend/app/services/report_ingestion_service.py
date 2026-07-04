@@ -8,6 +8,7 @@ from app.core.logging import get_logger
 from app.services.upload_service import UploadService
 from app.services.metadata_extraction_service import MetadataExtractionService
 from app.services.memory_service import MemoryService
+from app.services.graph_history_service import GraphHistoryService
 
 logger = get_logger("app.report_ingestion_service")
 
@@ -34,6 +35,7 @@ class ReportIngestionService:
         self.metadata_service = MetadataExtractionService(settings=self.settings)
         # Allow injection of a shared MemoryService (used by verification script)
         self.memory_service = memory_service or MemoryService(settings=self.settings)
+        self.graph_history_service = GraphHistoryService()
 
     async def _load_pdf_path(self, upload_id: str) -> Path:
         """Retrieve the stored PDF path from the UploadService."""
@@ -201,8 +203,6 @@ class ReportIngestionService:
                 await self.memory_service.initialize()
             if not self.memory_service.connected:
                 logger.warning("[MEMORY] MemoryService not connected – skipping ingestion.")
-                result["success"] = True
-                return result
 
             # 7. Activate dataset & nodeset
             self.memory_service.create_dataset(dataset_name)
@@ -228,14 +228,38 @@ class ReportIngestionService:
                 result["graph_available"] = True
                 result["graph_path"] = str(graph_path)
             else:
-                # create minimal placeholder so path is always present
-                placeholder = "<html><body><h2>Graph unavailable</h2></body></html>"
-                try:
-                    graph_path.write_text(placeholder, encoding="utf-8")
-                    result["graph_path"] = str(graph_path)
-                except Exception as e:
-                    logger.error("[GRAPH] Failed to write placeholder: %s", e)
-                    result["graph_path"] = None
+                result["graph_path"] = None
+                logger.warning("[GRAPH] Graph visualization failed for upload_id %s", upload_id)
+
+            # Create checkpoint after graph handling
+            try:
+                checkpoint_info = self.graph_history_service.create_checkpoint(
+                    patient_id=patient_id,
+                    dataset=dataset_name,
+                    source_report=pdf_path.name,
+                    graph_path=result.get("graph_path"),
+                    graph_available=result["graph_available"],
+                    nodesets=deterministic_labels,
+                    remember_completed=result["remember_completed"],
+                )
+                result["checkpoint_version"] = checkpoint_info["version"]
+                result["checkpoint_dir"] = checkpoint_info["checkpoint_dir"]
+                logger.info(
+                    "[CHECKPOINT] Creating checkpoint version %s for patient %s",
+                    checkpoint_info["version"],
+                    patient_id,
+                )
+                logger.info(
+                    "[CHECKPOINT] Checkpoint completed version %s directory=%s graph_available=%s",
+                    checkpoint_info["version"],
+                    checkpoint_info["checkpoint_dir"],
+                    result["graph_available"],
+                )
+            except Exception as e:
+                logger.exception("[CHECKPOINT] Failed to create checkpoint: %s", e)
+                result["error"] = f"Checkpoint creation failed: {e}"
+                result["success"] = False
+                return result
 
             result["success"] = True
 

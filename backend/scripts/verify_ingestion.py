@@ -2,6 +2,7 @@ import asyncio
 import time
 from pathlib import Path
 import io
+import json
 
 from fastapi import UploadFile
 
@@ -24,8 +25,8 @@ from app.services.report_ingestion_service import ReportIngestionService
 REPORT_FILES = [
     "John_Doe_01.pdf",
     "John_Doe_02.pdf",
-    "John_Doe_03.pdf",
-    # for testing we don't need to test with all the files, instead we can just test with the first three files. The rest can be uncommented if needed.
+    # for testing we don't need to test with all the files, instead we can just test with the first two files. The rest can be uncommented if needed.
+    # "John_Doe_03.pdf",
     # "John_Doe_04.pdf",
     # "John_Doe_05.pdf",
     # "John_Doe_06.pdf",
@@ -38,15 +39,17 @@ RECALL_QUERIES = [
 ]
 
 
-async def ingest_and_recall():
+async def ingest_and_recall() -> dict:
+    """
+    Ingest reports sequentially and return ingestion statistics.
+    Returns a dict with keys: successful, failed, total_processing_time.
+    """
     # Initialise shared services
     memory_service = MemoryService()
     await memory_service.initialize()
     upload_service = UploadService()
-    # Pass shared memory_service to ingestion service
     ingestion_service = ReportIngestionService(memory_service=memory_service)
 
-    total_reports = len(REPORT_FILES)
     successful = 0
     failed = 0
     total_processing_time = 0.0
@@ -60,7 +63,7 @@ async def ingest_and_recall():
             failed += 1
             continue
 
-        # Upload PDF and obtain upload_id
+        # Upload PDF
         with pdf_path.open("rb") as f:
             file_bytes = f.read()
         upload_file = UploadFile(filename=pdf_path.name, file=io.BytesIO(file_bytes))
@@ -82,7 +85,7 @@ async def ingest_and_recall():
         elapsed = time.time() - start
         total_processing_time += elapsed
 
-        # Concise summary
+        # Summary output
         print(f"Report: {pdf_name}")
         print(f"Success: {success}")
         print(f"Processing Time (s): {elapsed:.2f}")
@@ -93,10 +96,12 @@ async def ingest_and_recall():
             print(f"Remember completed: {result.get('remember_completed')}")
             print(f"Graph available: {result.get('graph_available')}")
             print(f"Graph path: {result.get('graph_path')}")
+            print(f"Checkpoint version: {result.get('checkpoint_version')}")
+            print(f"Checkpoint dir: {result.get('checkpoint_dir')}")
         else:
             print(f"Error: {result.get('error')}")
 
-        # Recall queries (only on success)
+        # Recall queries for successful ingestions
         if success:
             successful += 1
             for query in RECALL_QUERIES:
@@ -106,20 +111,72 @@ async def ingest_and_recall():
         else:
             failed += 1
 
-        print("=" * 30)
+    return {
+        "successful": successful,
+        "failed": failed,
+        "total_processing_time": total_processing_time,
+        "total_reports": len(REPORT_FILES),
+    }
 
-    # Final aggregated statistics
+async def run_all():
+    stats = await ingest_and_recall()
+    # ----- Checkpoint verification -----
+    total_reports = stats.get("total_reports", len(REPORT_FILES))
+    successful = stats.get("successful", 0)
+    failed = stats.get("failed", 0)
+    total_processing_time = stats.get("total_processing_time", 0.0)
+
+    storage_root = Path(__file__).resolve().parents[2] / "storage" / "graph_history"
+    storage_root.mkdir(parents=True, exist_ok=True)
+
+    total_checkpoints = 0
+    latest_version = 0
+    missing_graph = 0
+    missing_metadata = 0
+
+    for patient_dir in storage_root.iterdir():
+        if not patient_dir.is_dir():
+            continue
+        for ckpt_dir in patient_dir.iterdir():
+            if not ckpt_dir.is_dir() or not ckpt_dir.name.startswith("checkpoint_"):
+                continue
+            total_checkpoints += 1
+            try:
+                version = int(ckpt_dir.name.split("_")[-1])
+                latest_version = max(latest_version, version)
+            except Exception:
+                pass
+            meta_path = ckpt_dir / "metadata.json"
+            if not meta_path.is_file():
+                missing_metadata += 1
+            else:
+                try:
+                    meta = json.loads(meta_path.read_text())
+                    if not meta.get("graph_available", False):
+                        missing_graph += 1
+                    else:
+                        graph_file = meta.get("graph_file")
+                        if graph_file:
+                            if not (ckpt_dir / graph_file).is_file():
+                                missing_graph += 1
+                        else:
+                            missing_graph += 1
+                except Exception:
+                    missing_graph += 1
+
+    print("\n----- Checkpoint Summary -----")
+    print(f"Total Checkpoints: {total_checkpoints}")
+    print(f"Latest Version: {latest_version}")
+    print(f"Missing Graph Files: {missing_graph}")
+    print(f"Missing Metadata Files: {missing_metadata}")
+
     print("\n===== Ingestion Summary =====")
     print(f"Total reports processed: {total_reports}")
     print(f"Successful ingestions: {successful}")
     print(f"Failed ingestions: {failed}")
     print(f"Total processing time (s): {total_processing_time:.2f}")
     print("=" * 30)
-
-
-def main():
-    asyncio.run(ingest_and_recall())
-
-
 if __name__ == "__main__":
-    main()
+    asyncio.run(run_all())
+
+

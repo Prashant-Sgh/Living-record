@@ -1,0 +1,14 @@
+{
+  "version": 5,
+  "patient_id": "b23a6a84",
+  "dataset": "patient/b23a6a84",
+  "source_report": "46496e11f1c84dbc97ab16f20eca02a5.pdf",
+  "created_at": "2026-07-04T18:22:43.300634+00:00",
+  "graph_file": null,
+  "remember_completed": true,
+  "graph_available": false,
+  "nodesets": [
+    "patient/b23a6a84",
+    "document/medical_report"
+  ]
+}
