@@ -95,6 +95,9 @@ class OllamaProvider(MetadataExtractionProvider):
             raise InvalidJSONError("Ollama response JSON must be an object")
 
         try:
-            return MedicalMetadata.model_validate(payload)
+            # Filter out any unexpected fields before validation
+            allowed_keys = set(MedicalMetadata.model_fields.keys())
+            filtered_payload = {k: v for k, v in payload.items() if k in allowed_keys}
+            return MedicalMetadata.model_validate(filtered_payload)
         except PydanticValidationError as exc:
             raise ValidationError(str(exc)) from exc

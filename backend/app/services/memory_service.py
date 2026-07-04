@@ -66,8 +66,8 @@ class MemoryService:
         if self.mode == "local":
             # Local mode uses locally-provided LLM / embedding providers and does
             # not intentionally connect to remote Cognee Cloud.
-            if not (self.settings.llm_provider and self.settings.llm_model and self.settings.embedding_provider and self.settings.embedding_model):
-                logger.warning("Incomplete local model/embedding configuration; memory unavailable in local mode.")
+            if not (self.settings.embedding_provider and self.settings.embedding_model):
+                logger.warning("Incomplete embedding configuration; memory unavailable in local mode.")
                 self.connected = False
             else:
                 self.connected = await self._connect_cognee_local()
