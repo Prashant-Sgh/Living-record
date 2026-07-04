@@ -38,24 +38,20 @@ class Settings(BaseSettings):
     cognee_service_url: str | None = None
 
     # LLM metadata extraction
-    metadata_extraction_llm_provider: str | None = Field(default=None, env=("METADATA_EXTRACTION_LLM_PROVIDER", "LLM_PROVIDER"))
-    metadata_extraction_llm_model: str | None = Field(
+    metadata_extraction_llm_provider: str | None = Field(
         default=None,
-        env=("METADATA_EXTRACTION_LLM_MODEL", "OLLAMA_LLM_MODEL", "OPENAI_LLM_MODEL", "LLM_MODEL"),
+        env="METADATA_EXTRACTION_LLM_PROVIDER",
     )
-    llm_provider: str | None = None
-    llm_model: str | None = Field(default=None, env="LLM_MODEL")
-    llm_timeout_seconds: int = 30
-    llm_max_retries: int = 3
-    llm_temperature: float = 0.0
+    llm_timeout_seconds: int = Field(default=60, env="LLM_TIMEOUT_SECONDS")
+    llm_max_retries: int = Field(default=3, env="LLM_MAX_RETRIES")
+    llm_temperature: float = Field(default=0.0, env="LLM_TEMPERATURE")
 
-    openai_api_key: str | None = Field(default=None, env=("OPENAI_API_KEY", "LLM_API_KEY"))
-    openai_model: str | None = Field(default=None, env=("OPENAI_MODEL", "OPENAI_LLM_MODEL", "LLM_MODEL"))
-    openai_base_url: str | None = None
+    openai_api_key: str | None = Field(default=None, env="OPENAI_API_KEY")
+    openai_model: str | None = Field(default=None, env="OPENAI_MODEL")
+    openai_base_url: str | None = Field(default=None, env="OPENAI_BASE_URL")
 
-    ollama_api_key: str | None = Field(default=None, env="OLLAMA_API_KEY")
-    ollama_base_url: str | None = Field(default=None, env=("OLLAMA_BASE_URL", "LLM_ENDPOINT"))
-    ollama_model: str | None = Field(default=None, env=("OLLAMA_MODEL", "OLLAMA_LLM_MODEL", "LLM_MODEL"))
+    ollama_base_url: str | None = Field(default=None, env="OLLAMA_BASE_URL")
+    ollama_model: str | None = Field(default=None, env="OLLAMA_MODEL")
 
     embedding_provider: str | None = None
     embedding_model: str | None = None
@@ -105,9 +101,10 @@ def _validate_settings(settings: Settings) -> None:
     logger.info("Cognee credentials configured=%s", has_credentials)
 
     # LLM metadata extraction logging
-    provider = (settings.metadata_extraction_llm_provider or settings.llm_provider or "").lower()
+    provider = (settings.metadata_extraction_llm_provider or "").lower()
+    model = settings.openai_model if provider == "openai" else settings.ollama_model
     logger.info("Metadata extraction LLM provider=%s", provider or "unset")
-    logger.info("Metadata extraction model=%s", settings.metadata_extraction_llm_model or settings.llm_model or settings.openai_model or settings.ollama_model or "unset")
+    logger.info("Metadata extraction model=%s", model or "unset")
     logger.info("OpenAI configured=%s", bool(settings.openai_api_key))
     logger.info("Ollama base URL configured=%s", bool(settings.ollama_base_url))
 

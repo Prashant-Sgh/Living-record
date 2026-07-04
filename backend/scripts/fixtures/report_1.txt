@@ -1,0 +1,6 @@
+John Doe, patient ID 12345, visited the clinic on 2026-06-14 for a follow-up. Visit type: outpatient.
+He continues with Type II Diabetes and hypertension. Medications include Metformin 500 mg once daily and Lisinopril 10 mg.
+Lab tests: CBC, HbA1c. HbA1c result: 7.2%.
+Providers: Dr. Alice Smith, Dr. Bob Lee. Procedures: EKG.
+Symptoms: fatigue, increased thirst. Diagnoses: type 2 diabetes, essential hypertension.
+Recommendations: continue medication, follow diet, return in 3 months.
